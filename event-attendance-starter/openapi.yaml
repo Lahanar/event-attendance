@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: Event Attendance API (Lab)
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  /events/{eventId}/attendees:
+    post:
+      summary: Create attendee under an event
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendeeCreate'
+            examples:
+              ok:
+                value: { name: "Alice", email: "alice@example.com", ticketType: "standard" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attendee'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                bad:
+                  value: { error: "BadRequest", message: "validation error" }
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value: { error: "NotFound", message: "event not found" }
+        '409':
+          description: Duplicate (eventId,email)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                dup:
+                  value: { error: "Conflict", message: "attendee already exists for this event" }
+
+components:
+  schemas:
+    AttendeeCreate:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        ticketType:
+          type: string
+          enum: [standard, vip, student]
+          default: standard
+
+    Attendee:
+      type: object
+      required: [id, eventId, name, email, ticketType, status, createdAt, updatedAt]
+      properties:
+        id: { type: string, example: "f3e2f1..." }
+        eventId: { type: string, example: "e1" }
+        name: { type: string, example: "Alice" }
+        email: { type: string, example: "alice@example.com" }
+        ticketType: { type: string, enum: [standard, vip, student], example: standard }
+        status: { type: string, example: registered }
+        checkInAt: { type: string, nullable: true, example: null }
+        createdAt: { type: string, example: "2025-01-01T12:00:00Z" }
+        updatedAt: { type: string, example: "2025-01-01T12:00:00Z" }
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error: { type: string, example: BadRequest }
+        message: { type: string, example: validation error }
+        details:
+          type: object
+          additionalProperties: true
